@@ -11,6 +11,7 @@ class SublimeFilesCommand(sublime_plugin.WindowCommand):
         try:
             self.home
         except:
+            self.current_dir = ""
             # first time starting up. ugly, but works
             settings = sublime.load_settings('SublimeFiles.sublime-settings')
             if os.name == 'nt':
@@ -18,7 +19,8 @@ class SublimeFilesCommand(sublime_plugin.WindowCommand):
             else:
                 self.home = 'HOME'
             try:
-                os.chdir(os.path.dirname(sublime.active_window().active_view().file_name()))
+                self.current_dir = os.path.dirname(sublime.active_window().active_view().file_name())
+                os.chdir(self.current_dir)
             except:
                 os.chdir(os.getenv(self.home))
             self.bookmark = None
@@ -31,6 +33,8 @@ class SublimeFilesCommand(sublime_plugin.WindowCommand):
 
     # function for showing panel for changing directories / opening files
     def open_navigator(self):
+        self.current_dir = os.getcwd()
+        print(self.current_dir)
         self.dir_files = ['[' + os.getcwd() + ']',
             bullet + ' Directory actions', '..' + os.sep, '~' + os.sep]
 
@@ -45,10 +49,11 @@ class SublimeFilesCommand(sublime_plugin.WindowCommand):
 
         for element in os.listdir(os.getcwd()):
             ignore_element = False
-            for ignore_pattern in self.ignore_list:
-                if fnmatch(element, ignore_pattern):
-                    ignore_element = True
-                    break
+            if self.ignore_list:
+                for ignore_pattern in self.ignore_list:
+                    if fnmatch(element, ignore_pattern):
+                        ignore_element = True
+                        break
             if not ignore_element:
                 fullpath = os.path.join(os.getcwd(), element)
                 if os.path.isdir(fullpath):
@@ -61,10 +66,11 @@ class SublimeFilesCommand(sublime_plugin.WindowCommand):
             self.dir_files.insert(2, bullet + ' To bookmark (' + self.bookmark + ')')
         if self.window.active_view() and self.window.active_view().file_name():
             self.dir_files.insert(2, bullet + ' To current view')
-        self.window.show_quick_panel(self.dir_files, self.handle_navigator_option, sublime.MONOSPACE_FONT)
+        sublime.set_timeout(lambda: self.window.show_quick_panel(self.dir_files, self.handle_navigator_option, sublime.MONOSPACE_FONT), 10)
 
     # handles user's selection from open_navigator
     def handle_navigator_option(self, call_value):
+        os.chdir(self.current_dir)
         if call_value != -1:
             option = self.dir_files[call_value]
             if call_value == 0:
@@ -97,7 +103,7 @@ class SublimeFilesCommand(sublime_plugin.WindowCommand):
         # terminal opening. only for osx/linux right now
         if os.name == 'posix' and self.term_command:
             self.directory_options.insert(0, bullet + ' Open terminal here')
-        self.window.show_quick_panel(self.directory_options, self.handle_directory_option, sublime.MONOSPACE_FONT)
+        sublime.set_timeout(lambda: self.window.show_quick_panel(self.directory_options, self.handle_directory_option, sublime.MONOSPACE_FONT), 10)
 
     # handle choice for when user selects option from current directory
     def handle_directory_option(self, call_value):
