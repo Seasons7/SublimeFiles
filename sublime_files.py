@@ -93,6 +93,8 @@ class SublimeFilesCommand(sublime_plugin.WindowCommand):
                     os.chdir(self.dir_files[call_value])
                 else: # open file
                     self.window.open_file(os.path.join(os.getcwd(), fullpath))
+                    sublime.set_timeout(lambda: self.window.show_quick_panel(
+                        ["<Enter to start edit>"], None, sublime.MONOSPACE_FONT), 10)
                     return
             self.open_navigator()
 
